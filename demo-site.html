@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let bigAudioBlob = null;
+
+function startRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+
+      mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        audioChunks = [];
+        document.getElementById('recordedAudio').src = URL.createObjectURL(audioBlob);
+        //document.getElementById('recordedAudio').dataset.blob = audioBlob;
+        bigAudioBlob = audioBlob;
+      };
+    });
+}
+
+function stopRecording() {
+  mediaRecorder.stop();
+}
+
+function cancelRecording() {
+  mediaRecorder.stop();
+  audioChunks = [];
+  document.getElementById('recordedAudio').src = '';
+  delete document.getElementById('recordedAudio').dataset.blob;
+}
+
+function submitAudio() {
+  //const audioBlob = document.getElementById('recordedAudio').dataset.blob;
+  const audioBlob = bigAudioBlob;
+  if (audioBlob != null) {
+    
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'audio.wav');
+    //var xhr=new XMLHttpRequest();
+    //xhr.onload=function(e) {
+    //if(this.readyState === 4) {
+    //  console.log("Server returned: ",e.target.responseText);
+    //} 
+
+    $.ajax({
+      //url: "http://67.58.51.118:8080/",
+       url: "http://127.0.0.1:8080/",
+      // url: "http://100.80.231.89:8080/",
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        document.getElementById('responseText').innerText = JSON.stringify(result);
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        document.getElementById('responseText').innerText = `Error: ${textStatus}, ${errorThrown}`;
+      }
+    });
+  } else {
+    alert('No audio recorded.');
+  }
+/*
+  };
+
+    xhr.open("POST","http://127.0.0.1:8080/",true);
+    xhr.send(formData);
+    console.log("Trying to send file");
+
+  */  
+  
+/*
+  var fd=new FormData();
+  fd.append("audio_data", audioBlob, "filename");
+  xhr.open("POST","http://127.0.0.1:8080/",true);
+  xhr.send(fd);
+*/
+  bigAudioBlob = null;
+}
+/*
+    $.ajax({
+      url: "http://127.0.0.1:8080/",
+      //url: "http://100.80.231.89:8080/",
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(result) {
+        document.getElementById('responseText').innerText = JSON.stringify(result);
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        document.getElementById('responseText').innerText = `Error: ${textStatus}, ${errorThrown}`;
+      }
+    });
+  } else {
+    alert('No audio recorded.');
+  }
+*/
+//arguments
+  
+//}
+</script>
+<body>
+
+<h2>Metahumans Demo</h2>
+
+<div>
+  <button onclick="startRecording()">Start Recording</button>
+  <button onclick="stopRecording()">Stop Recording</button>
+  <button onclick="cancelRecording()">Cancel Recording</button>
+</div>
+<br>
+<audio id="recordedAudio" controls></audio>
+<br><br>
+<button onclick="submitAudio()">Submit Audio</button>
+
+<h3>Response</h3>
+<p id="responseText"></p>
+
+</body>
+</html>
