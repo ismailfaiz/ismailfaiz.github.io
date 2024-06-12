@@ -56,6 +56,7 @@ function submitAudio() {
       data: formData,
       processData: false,
       contentType: false,
+      crossDomain: true,
       success: function(result) {
         document.getElementById('responseText').innerText = JSON.stringify(result);
       },
